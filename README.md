@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. No environment variables or database are required. The initial demo includes the supplied products, coupons, rewards, and a $9 starting ExtraBucks balance. Prices and offers are **illustrative**, not live CVS offers. Colgate rewards and additional manufacturer discounts were not supplied and are not invented.
+Open http://localhost:3000. No environment variables or database are required. The app starts with an empty workspace: no mock trips, products, coupons, or rewards. Unchanged sample trips from the first release are hidden automatically; customized and completed trips are preserved.
 
 ```sh
 npm test
@@ -49,12 +49,12 @@ Alternatively, authenticate the Vercel CLI and run `npx vercel --prod` in this r
 
 ## How to use it
 
-1. Explore the demo, or create a trip and enter its settings, starting rewards, date, and estimated tax rate.
+1. Create a trip and enter its settings, starting rewards, date, and estimated tax rate.
 2. Add products and attach trip coupons (or select saved inventory coupons).
 3. Create deal groups to protect thresholds. Enter each discount/reward once, either in a coupon or group.
 4. Assign product lines to transactions. Locked group splits are rejected; saving a locked group consolidates overlapping transactions safely.
 5. Optimize, inspect the proposed order and totals, then apply it. You can still reorder manually.
-6. Duplicate the trip to try substitutions and compare scenarios.
+6. Create a scenario to try substitutions and compare results. Its name field opens empty and focused; type a name and press Enter or click away to save. Click any trip/scenario title to rename it directly.
 7. After shopping, record the plan as completed to snapshot the estimates, consume attached inventory coupon uses, and update linked wallet rewards. Enter earned reward expiration dates from the receipt.
 
 Wallet balances and manually typed trip starting balances are separate. **Use current wallet balance** links the eligible wallet rewards for the trip's shopping date. Refresh it before recording if another completed trip has consumed those rewards. A recorded trip is read-only; create a scenario to reuse it. History records the displayed estimates, not actual receipts.
@@ -100,7 +100,7 @@ src/components/forms.tsx  React Hook Form editors, validated with Zod
 src/components/ui.tsx     Summary, transaction, deal, threshold and badge components
 src/lib/models.ts         Versioned domain models and Zod schemas
 src/lib/money.ts          Cent conversion, formatting, dates and identifiers
-src/lib/seed.ts           Initial demo and blank trips
+src/lib/seed.ts           Empty initial state and blank trips
 src/services/calculations.ts  Pure financial and eligibility functions
 src/services/optimizer.ts     Deterministic search and grouping
 src/services/optimizer.worker.ts  Background worker adapter

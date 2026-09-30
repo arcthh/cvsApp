@@ -1992,3 +1992,29 @@ td select {
     transition: none !important;
   }
 }
+
+.inline-name-button {
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  border-bottom: 1px dashed transparent;
+  overflow-wrap: anywhere;
+}
+.inline-name-button:hover {
+  border-bottom-color: var(--red);
+}
+.inline-name-input {
+  font: inherit;
+  letter-spacing: inherit;
+  width: 100%;
+  padding: 0 0 5px;
+  border: 0;
+  border-bottom: 2px solid var(--red);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+}
+.editable-heading {
+  max-width: 100%;
+  min-width: 220px;
+}

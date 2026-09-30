@@ -37,7 +37,7 @@ import {
   type OptimizationResult,
   stateSchema,
 } from "@/lib/models";
-import { blankTrip, demoTrip, initialState } from "@/lib/seed";
+import { blankTrip, initialState } from "@/lib/seed";
 import { localRepository, STORAGE_KEY } from "@/services/storage";
 import {
   calculateTrip,
@@ -113,6 +113,10 @@ export default function CouponApp() {
   const [filter, setFilter] = useState("All"),
     [query, setQuery] = useState(""),
     [scenarioIds, setScenarioIds] = useState<string[]>([]);
+  const [nameEditor, setNameEditor] = useState<{
+    tripId: string;
+    draft: string;
+  } | null>(null);
   const worker = useRef<Worker | null>(null),
     importRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -120,13 +124,18 @@ export default function CouponApp() {
       try {
         const loaded = localRepository.load();
         setState(loaded);
+        const renameId = sessionStorage.getItem("cvsapp:rename");
+        if (renameId && loaded.trips.some((t) => t.id === renameId)) {
+          setNameEditor({ tripId: renameId, draft: "" });
+          sessionStorage.removeItem("cvsapp:rename");
+        }
         setSelected(
           localStorage.getItem("cvsapp:active") || loaded.trips[0]?.id || "",
         );
       } catch {
         setState(initialState());
         setNotice(
-          "Saved data could not be read. A fresh demo is displayed; the original data is untouched until you save. Export the original backup before making changes.",
+          "Saved data could not be read. An empty workspace is displayed; the original data is untouched until you save. Export the original backup before making changes.",
         );
       }
     });
@@ -166,21 +175,21 @@ export default function CouponApp() {
       trips: state.trips.map((t) => (t.id === next.id ? next : t)),
     });
   }
-  function addTrip(demo = false) {
+  function addTrip() {
     if (!state) return;
-    const next = demo ? demoTrip() : blankTrip();
+    const next = blankTrip();
     commit({ ...state, trips: [next, ...state.trips] });
     selectTrip(next.id);
     router.push("/planner");
-    setPlannerTab(demo ? "transactions" : "products");
-    if (!demo) setEditor({ kind: "trip" });
+    setPlannerTab("products");
+    setEditor({ kind: "trip" });
   }
   function duplicateTrip() {
     if (!state || !trip) return;
     const next = {
       ...structuredClone(trip),
       id: uid(),
-      name: `${trip.name} — alternative`,
+      name: "Untitled scenario",
       status: "planned" as const,
       completedSummary: undefined,
       scenarioOf: trip.scenarioOf ?? trip.id,
@@ -188,6 +197,10 @@ export default function CouponApp() {
     };
     commit({ ...state, trips: [next, ...state.trips] });
     selectTrip(next.id);
+    setNameEditor({ tripId: next.id, draft: "" });
+    try {
+      sessionStorage.setItem("cvsapp:rename", next.id);
+    } catch {}
     router.push("/planner");
     setNotice(
       "Scenario created. Change products or coupons, optimize it, then compare the results.",
@@ -633,7 +646,7 @@ export default function CouponApp() {
                   <button
                     onClick={() => {
                       if (trip) router.push("/planner");
-                      else addTrip(true);
+                      else addTrip();
                     }}
                   >
                     Plan my next trip <ArrowUpRight size={17} />
@@ -694,11 +707,8 @@ export default function CouponApp() {
                 <section>
                   <div className="section-heading">
                     <h2>Your shopping trips</h2>
-                    <button
-                      className="text-button"
-                      onClick={() => addTrip(true)}
-                    >
-                      Load another demo
+                    <button className="text-button" onClick={() => addTrip()}>
+                      Create a trip
                     </button>
                   </div>
                   {state.trips.length ? (
@@ -767,8 +777,8 @@ export default function CouponApp() {
                     <p>Optimize, then shop in order.</p>
                   </div>
                   <p className="text-xs muted">
-                    Demo offers are illustrative. Verify prices, coupons,
-                    rewards, and estimated taxes before shopping.
+                    Verify prices, coupons, rewards, and estimated taxes before
+                    shopping.
                   </p>
                 </section>
               </div>
@@ -790,7 +800,57 @@ export default function CouponApp() {
                   <div className="page-heading">
                     <div>
                       <p className="eyebrow">YOUR NEXT SMART SHOPPING RUN</p>
-                      <h1>{trip.name}</h1>
+                      <h1 className="editable-heading">
+                        {nameEditor?.tripId === trip.id ? (
+                          <input
+                            className="inline-name-input"
+                            aria-label="Trip or scenario name"
+                            placeholder="Name this scenario"
+                            value={nameEditor.draft}
+                            autoFocus
+                            onChange={(e) =>
+                              setNameEditor({
+                                tripId: trip.id,
+                                draft: e.target.value,
+                              })
+                            }
+                            onBlur={() => {
+                              const name = nameEditor.draft.trim();
+                              if (name) updateTrip({ ...trip, name });
+                              setNameEditor(null);
+                              try {
+                                sessionStorage.removeItem("cvsapp:rename");
+                              } catch {}
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                e.currentTarget.blur();
+                              }
+                              if (e.key === "Escape") {
+                                setNameEditor(null);
+                                try {
+                                  sessionStorage.removeItem("cvsapp:rename");
+                                } catch {}
+                              }
+                            }}
+                          />
+                        ) : (
+                          <button
+                            className="inline-name-button"
+                            aria-label={`Rename ${trip.name}`}
+                            title="Click to rename"
+                            onClick={() =>
+                              setNameEditor({
+                                tripId: trip.id,
+                                draft: trip.name,
+                              })
+                            }
+                          >
+                            {trip.name}
+                          </button>
+                        )}
+                      </h1>
                       <p className="flex items-center gap-2">
                         <MapPin size={14} />
                         {trip.store}
@@ -1689,7 +1749,7 @@ export default function CouponApp() {
               {!state.wallet.length && (
                 <Empty
                   title="Give your rewards a home"
-                  description="Add the ExtraBucks you already have. The demo trip has a separate $9 starting balance."
+                  description="Add the ExtraBucks you already have. "
                 />
               )}
             </>
